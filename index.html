@@ -249,7 +249,6 @@
             dlpGroup.style.display = 'none';
             dllGroup.style.display = 'block';
         } else {
-            // DLP uses unified landscape template
             paper.classList.add('landscape'); 
             dlpGroup.style.display = 'block';
             dllGroup.style.display = 'none';
@@ -496,11 +495,12 @@
                 <LC>${data.lc ? data.lc : 'Generate'}</LC>
                 <RESOURCES>List references</RESOURCES>
 
-                <D1_C>(Topic)</D1_C>
-                <D1_A>(Step A)</D1_A> <D1_B>(Step B)</D1_B> <D1_C_Proc>(Step C)</D1_C_Proc>
-                <D1_D>(Step D)</D1_D> <D1_E>(Step E)</D1_E> <D1_F>(Step F)</D1_F> 
-                <D1_G>(Step G)</D1_G> <D1_H>(Step H)</D1_H> <D1_I>(Step I)</D1_I> <D1_J>(Step J)</D1_J>
+                <D1_TOPIC>(Detailed Content Topic)</D1_TOPIC>
+                <D1_A>(Step A content)</D1_A> <D1_B>(Step B content)</D1_B> <D1_C>(Step C content)</D1_C>
+                <D1_D>(Step D content)</D1_D> <D1_E>(Step E content)</D1_E> <D1_F>(Step F content)</D1_F> 
+                <D1_G>(Step G content)</D1_G> <D1_H>(Step H content)</D1_H> <D1_I>(Step I content)</D1_I> <D1_J>(Step J content)</D1_J>
                 
+                IMPORTANT: YOU MUST GENERATE TEXT FOR EVERY SINGLE TAG ABOVE. DO NOT SKIP ANY.
                 NOTE: Omit REMARKS/REFLECTION. Use Markdown.
             `;
         } else {
@@ -519,11 +519,13 @@
                 <LC>${data.lc ? data.lc : 'Generate'}</LC> 
                 <RESOURCES>Refs</RESOURCES>
 
-                Day 1: <D1_C>...</D1_C> <D1_A>...</D1_A> <D1_B>...</D1_B> <D1_C_Proc>...</D1_C_Proc> <D1_D>...</D1_D> <D1_E>...</D1_E> <D1_F>...</D1_F> <D1_G>...</D1_G> <D1_H>...</D1_H> <D1_I>...</D1_I> <D1_J>...</D1_J>
-                Day 2: <D2_C>...</D2_C> ...
-                Day 3: <D3_C>...</D3_C> ...
-                Day 4: <D4_C>...</D4_C> ...
-                Day 5: <D5_C>...</D5_C> ...
+                Day 1: <D1_TOPIC>...</D1_TOPIC> <D1_A>...</D1_A> <D1_B>...</D1_B> <D1_C>...</D1_C> <D1_D>...</D1_D> <D1_E>...</D1_E> <D1_F>...</D1_F> <D1_G>...</D1_G> <D1_H>...</D1_H> <D1_I>...</D1_I> <D1_J>...</D1_J>
+                Day 2: <D2_TOPIC>...</D2_TOPIC> <D2_A>...</D2_A> ... <D2_J>...</D2_J>
+                Day 3: <D3_TOPIC>...</D3_TOPIC> <D3_A>...</D3_A> ...
+                Day 4: <D4_TOPIC>...</D4_TOPIC> <D4_A>...</D4_A> ...
+                Day 5: <D5_TOPIC>...</D5_TOPIC> <D5_A>...</D5_A> ...
+                
+                IMPORTANT: YOU MUST GENERATE TEXT FOR EVERY SINGLE TAG FOR THE ACTIVE DAYS.
             `;
         }
 
@@ -546,18 +548,17 @@
             for(let i=1; i<=maxDays; i++) {
                 if(!isDLP && !document.getElementById(`date-d${i}`).value) continue;
 
-                const content = extractSection(text, `D${i}_C`);
+                const content = extractSection(text, `D${i}_TOPIC`);
                 if(content) document.getElementById(`d${i}-content`).innerHTML = marked.parse(content);
                 
                 const steps = ['A','B','C','D','E','F','G','H','I','J'];
                 steps.forEach(s => {
                     let tag = `D${i}_${s}`;
-                    if(s === 'C') tag = `D${i}_C_Proc`; 
                     const val = extractSection(text, tag);
                     if(val) document.getElementById(`d${i}-proc-${s.toLowerCase()}`).innerHTML = marked.parse(val);
                 });
             }
-            Swal.fire({ icon: 'success', title: 'Lesson Plan Generated!', timer: 1800, showConfirmButton: false });
+            Swal.fire({ icon: 'success', title: 'Plan Generated!', timer: 1500, showConfirmButton: false });
         } catch (e) { 
             Swal.fire({ icon: 'error', title: 'Server Error', text: e.message });
         } finally { btn.disabled = false; spinner.style.display = 'none'; }
