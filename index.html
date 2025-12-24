@@ -8,12 +8,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root { --primary: #0f172a; --accent: #2563eb; --bg-app: #e2e8f0; --paper-width: 216mm; --paper-height: 330mm; } 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Roboto', sans-serif; background: var(--bg-app); height: 100vh; display: flex; overflow: hidden; color: #334155; }
         
-        /* SIDEBAR */
         .sidebar { width: 380px; background: white; border-right: 1px solid #cbd5e1; display: flex; flex-direction: column; overflow-y: auto; z-index: 10; flex-shrink: 0; }
         .sidebar-header { padding: 20px; background: var(--primary); color: white; }
         .sidebar-header h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 5px; }
@@ -27,17 +27,16 @@
         .row { display: flex; gap: 10px; }
         .row > div { flex: 1; }
 
-        /* BUTTONS */
         .btn-generate { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s; }
         .btn-generate:hover { background: #1d4ed8; }
         .btn-generate:disabled { background: #94a3b8; cursor: not-allowed; }
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-secondary { flex: 1; padding: 10px; border: 1px solid #cbd5e1; background: white; border-radius: 6px; font-weight: 600; color: #334155; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px; font-size: 0.8rem; transition: 0.2s; }
+        
+        .btn-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .btn-secondary { padding: 10px; border: 1px solid #cbd5e1; background: white; border-radius: 6px; font-weight: 600; color: #334155; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px; font-size: 0.8rem; transition: 0.2s; width: 100%; }
         .btn-secondary:hover { background: #f1f5f9; }
         .btn-dev { background: #334155; color: white; border: none; margin-top: 5px; }
         .btn-dev:hover { background: #1e293b; }
 
-        /* HOME BUTTON */
         .btn-home-back {
             background: linear-gradient(45deg, #1e3a8a, #2563eb, #3b82f6);
             background-size: 200% 200%;
@@ -50,7 +49,6 @@
         .btn-home-back:active { transform: translateY(-1px); }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
-        /* PREVIEW AREA */
         .preview-area { flex: 1; background: #cbd5e1; padding: 30px; overflow-y: auto; display: flex; justify-content: center; }
         
         .bond-paper { 
@@ -68,9 +66,8 @@
             transition: width 0.3s ease;
         }
 
-        /* Landscape Mode Modifier */
         .bond-paper.landscape {
-            width: 330mm; /* Legal Landscape */
+            width: 330mm; 
             min-height: 216mm; 
             padding: 10mm;
         }
@@ -80,7 +77,6 @@
         .official-header h5 { margin: 0; font-size: 9pt; font-weight: normal; }
         .official-header h4 { margin: 2px 0; font-size: 10pt; font-weight: bold; text-transform: uppercase; }
         
-        /* TABLES */
         .tpl-table { 
             width: 100%; 
             border-collapse: collapse; 
@@ -93,8 +89,6 @@
             border: 1px solid black; 
             padding: 4px; 
             vertical-align: top; 
-            
-            /* AGGRESSIVE WRAPPING TO PREVENT OVERFLOW */
             word-wrap: break-word;          
             overflow-wrap: break-word;      
             word-break: break-word;         
@@ -104,7 +98,6 @@
         .header-label { width: 15%; background: #eee; text-align: left; font-weight: bold; vertical-align: middle; font-size: 8pt; }
         .header-val { width: 35%; font-weight: bold; font-size: 9pt;}
 
-        /* DLL Grid specific */
         .dll-grid th { background: #d1d5db; text-align: center; font-weight: bold; font-size: 8pt; vertical-align: middle; }
         .dll-grid td { font-size: 8pt; }
         .dll-row-header { background: #f3f4f6; font-weight: bold; width: 150px; }
@@ -118,7 +111,6 @@
         .spinner { display: none; width: 16px; height: 16px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: rotation 1s linear infinite; }
         @keyframes rotation { to { transform: rotate(360deg); } }
 
-        /* MARKDOWN CONTENT FIXES */
         .parsed-md ul, .parsed-md ol { padding-left: 15px; margin: 0; }
         .parsed-md p { margin: 0 0 5px 0; }
         .parsed-md strong { font-weight: bold; color: #000; }
@@ -145,7 +137,6 @@
                 width: 100% !important; 
                 border: none;
                 overflow: visible !important;
-                /* Shrink slightly to ensure margins don't cut off content */
                 transform: scale(0.98); 
                 transform-origin: top left;
             }
@@ -156,7 +147,6 @@
             
             .btn-group { display: none; }
             
-            /* Print Specific Font Sizing to fit more */
             .tpl-table td, .tpl-table th { 
                 font-size: 8.5pt !important; 
                 page-break-inside: avoid;
@@ -252,9 +242,17 @@
         </button>
 
         <div class="btn-group">
-            <button class="btn-secondary" onclick="window.print()"><i class="fa-solid fa-print"></i> PDF/Print</button>
-            <button class="btn-secondary" onclick="exportToWord()"><i class="fa-solid fa-file-word"></i> Word</button>
+            <button class="btn-secondary" onclick="window.print()">
+                <i class="fa-solid fa-print"></i> PRINT
+            </button>
+            <button class="btn-secondary" onclick="downloadPDF()">
+                <i class="fa-solid fa-file-pdf"></i> Download PDF
+            </button>
+            <button class="btn-secondary" onclick="exportToWord()">
+                <i class="fa-solid fa-file-word"></i> Download WORD
+            </button>
         </div>
+        
         <button class="btn-secondary btn-dev" onclick="showDevInfo()"><i class="fa-solid fa-code"></i> About Developer</button>
         <div style="height: 50px;"></div>
     </div>
@@ -262,7 +260,6 @@
 
 <div class="preview-area">
     <div class="bond-paper" id="paperContent">
-        
         <div class="official-header">
             <img src="logo.png" alt="School Logo" onerror="this.style.display='none'">
             <h5>Republic of the Philippines</h5>
@@ -271,11 +268,8 @@
             <h4 id="displaySchoolHeader">COGON NATIONAL HIGH SCHOOL</h4>
             <h5>Division of the Island Garden City of Samal</h5>
         </div>
-
         <div id="headerArea"></div>
-
         <div id="contentArea"></div>
-
         <div class="signature-section">
             <div class="sig-block"><div>PREPARED BY:</div><div class="sig-name" id="sigTeacherName"></div><div class="sig-pos" id="sigTeacherPos"></div></div>
             <div class="sig-block"><div>CHECKED BY:</div><div class="sig-name" id="sigCheckerName"></div><div class="sig-pos" id="sigCheckerPos"></div></div>
@@ -462,10 +456,46 @@
         });
     }
 
+    function downloadPDF() {
+        const element = document.getElementById('paperContent');
+        const opt = {
+            margin:       0.2,
+            filename:     'LessonPlan.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'legal', orientation: 'landscape' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+
+    function exportToWord() {
+        const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' "+
+                       "xmlns:w='urn:schemas-microsoft-com:office:word' "+
+                       "xmlns='http://www.w3.org/TR/REC-html40'>"+
+                       "<head><meta charset='utf-8'><title>Export HTML to Word Document with JavaScript</title>"+
+                       "<style>"+
+                       "@page { size: 13in 8.5in; margin: 0.5in; mso-page-orientation: landscape; }"+
+                       "body { font-family: Arial, sans-serif; }"+
+                       "table { border-collapse: collapse; width: 100%; table-layout: fixed; }"+
+                       "td, th { border: 1px solid black; padding: 5px; vertical-align: top; word-wrap: break-word; }"+
+                       ".header-label { background: #eee; font-weight: bold; }"+
+                       ".dll-row-header { background: #f3f4f6; font-weight: bold; }"+
+                       "</style></head><body>";
+        const footer = "</body></html>";
+        const sourceHTML = header+document.getElementById("paperContent").innerHTML+footer;
+        
+        const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+        const fileDownload = document.createElement("a");
+        document.body.appendChild(fileDownload);
+        fileDownload.href = source;
+        fileDownload.download = 'LessonPlan.doc';
+        fileDownload.click();
+        document.body.removeChild(fileDownload);
+    }
+
     async function generatePlan() {
         const data = getInputs();
         
-        // --- OFFLINE CHECK ---
         if (window.location.protocol === 'file:') {
             Swal.fire({ icon: 'error', title: 'Offline Mode Error', html: 'You cannot run this file directly.<br>Please use <b>Live Server</b> in VS Code or upload to <b>GitHub Pages</b>.' });
             return;
@@ -484,7 +514,6 @@
         const isDLP = data.docType === 'DLP';
         const model = data.model;
 
-        // --- MAPPING LOGIC ---
         let modelInstructions = "";
         if (model === "4As") {
             modelInstructions = `
