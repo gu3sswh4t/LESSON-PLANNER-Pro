@@ -9,10 +9,11 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        :root { --primary: #0f172a; --accent: #2563eb; --bg-app: #e2e8f0; --paper-width: 216mm; --paper-height: 330mm; }
+        :root { --primary: #0f172a; --accent: #2563eb; --bg-app: #e2e8f0; --paper-width: 216mm; --paper-height: 330mm; } /* Legal Size Default */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Roboto', sans-serif; background: var(--bg-app); height: 100vh; display: flex; overflow: hidden; color: #334155; }
         
+        /* SIDEBAR */
         .sidebar { width: 380px; background: white; border-right: 1px solid #cbd5e1; display: flex; flex-direction: column; overflow-y: auto; z-index: 10; flex-shrink: 0; }
         .sidebar-header { padding: 20px; background: var(--primary); color: white; }
         .sidebar-header h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 5px; }
@@ -26,6 +27,7 @@
         .row { display: flex; gap: 10px; }
         .row > div { flex: 1; }
 
+        /* BUTTONS */
         .btn-generate { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s; }
         .btn-generate:hover { background: #1d4ed8; }
         .btn-generate:disabled { background: #94a3b8; cursor: not-allowed; }
@@ -35,6 +37,7 @@
         .btn-dev { background: #334155; color: white; border: none; margin-top: 5px; }
         .btn-dev:hover { background: #1e293b; }
 
+        /* HOME BUTTON */
         .btn-home-back {
             background: linear-gradient(45deg, #1e3a8a, #2563eb, #3b82f6);
             background-size: 200% 200%;
@@ -65,8 +68,9 @@
             transition: width 0.3s ease;
         }
 
+        /* Landscape Mode Modifier */
         .bond-paper.landscape {
-            width: 330mm;
+            width: 330mm; /* Legal Landscape width approx */
             min-height: 216mm; 
             padding: 10mm;
         }
@@ -76,12 +80,14 @@
         .official-header h5 { margin: 0; font-size: 9pt; font-weight: normal; }
         .official-header h4 { margin: 2px 0; font-size: 10pt; font-weight: bold; text-transform: uppercase; }
         
+        /* TABLES */
         .tpl-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 9pt; table-layout: fixed; }
         .tpl-table td, .tpl-table th { border: 1px solid black; padding: 4px; vertical-align: top; overflow-wrap: break-word; word-wrap: break-word; }
         
         .header-label { width: 15%; background: #eee; text-align: left; font-weight: bold; vertical-align: middle; font-size: 8pt; }
         .header-val { width: 35%; font-weight: bold; font-size: 9pt;}
 
+        /* DLL Grid specific */
         .dll-grid th { background: #d1d5db; text-align: center; font-weight: bold; font-size: 8pt; vertical-align: middle; }
         .dll-grid td { font-size: 8pt; }
         .dll-row-header { background: #f3f4f6; font-weight: bold; width: 150px; }
@@ -95,8 +101,10 @@
         .spinner { display: none; width: 16px; height: 16px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: rotation 1s linear infinite; }
         @keyframes rotation { to { transform: rotate(360deg); } }
 
+        /* MARKDOWN CONTENT FIXES */
         .parsed-md ul, .parsed-md ol { padding-left: 15px; margin: 0; }
         .parsed-md p { margin: 0 0 5px 0; }
+        .parsed-md strong { font-weight: bold; color: #000; }
         
         @media print {
             @page { size: auto; margin: 5mm; } 
@@ -233,7 +241,8 @@
             dlpGroup.style.display = 'none';
             dllGroup.style.display = 'block';
         } else {
-            paper.classList.remove('landscape');
+            // DLP also uses Landscape now to fit the wide unified template
+            paper.classList.add('landscape'); 
             dlpGroup.style.display = 'block';
             dllGroup.style.display = 'none';
         }
@@ -403,20 +412,9 @@
     async function generatePlan() {
         const data = getInputs();
         
-        // --- 1. CHECK IF RUNNING OFFLINE ---
+        // --- CHECK IF RUNNING OFFLINE ---
         if (window.location.protocol === 'file:') {
-            Swal.fire({
-                icon: 'error',
-                title: 'Cannot Run in Offline File Mode',
-                html: `
-                    Browser security blocks AI connections from "file://" paths.<br><br>
-                    <b>Solution:</b><br>
-                    1. Use <b>VS Code</b>.<br>
-                    2. Right-click this file.<br>
-                    3. Select <b>"Open with Live Server"</b>.
-                `,
-                footer: 'This app needs a local server to function.'
-            });
+            Swal.fire({ icon: 'error', title: 'Offline Mode Error', html: 'You cannot run this file directly.<br>Please use <b>Live Server</b> in VS Code or upload to <b>GitHub Pages</b>.' });
             return;
         }
 
@@ -431,37 +429,41 @@
         
         let prompt = "";
         const isDLP = data.docType === 'DLP';
-        
+        const commonInst = `
+            Standards: ${data.cs || 'Generate CS'}, ${data.ps || 'Generate PS'}, ${data.lc || 'Generate LC'}.
+            REQUIREMENTS:
+            1. **Content Standards**: MUST include Cognitive, Psychomotor, and Affective objectives.
+            2. **Integration**: Integrate at least 3 subjects in the Objectives.
+            3. **Procedures**: Tailor steps to topic. **CRITICAL**: For EVERY activity, include a **SIMPLE RUBRIC** (e.g. 5pts=Accurate) in the text.
+            4. **Resources**: Specific references are required.
+        `;
+
         if (isDLP) {
             prompt = `
                 Act as DepEd Teacher. Create a DETAILED Lesson Plan (DLP) for "${data.topic}" (${data.subject}, ${data.grade}).
-                Standards: ${data.cs || 'Generate CS'}, ${data.ps || 'Generate PS'}, ${data.lc || 'Generate LC'}.
-                Provide CONTENT and DETAILED PROCEDURE steps (A-J). Use specific XML tags. 
-                <CS>${data.cs || 'Generate CS'}</CS> <PS>${data.ps || 'Generate PS'}</PS> <LC>${data.lc || 'Generate LC'}</LC>
-                <RESOURCES>List references</RESOURCES>
-                <D1_C>(Content/Topic)</D1_C>
-                <D1_A>(Review/Intro)</D1_A> <D1_B>(Purpose)</D1_B> <D1_C_Proc>(Examples)</D1_C_Proc>
-                <D1_D>(Discuss Concept 1)</D1_D> <D1_E>(Discuss Concept 2)</D1_E> 
-                <D1_F>(Mastery Activity)</D1_F> <D1_G>(Application)</D1_G> 
-                <D1_H>(Generalization)</D1_H> <D1_I>(Evaluation/Quiz)</D1_I> <D1_J>(Additional)</D1_J>
-                IMPORTANT: REMARKS and REFLECTION tags must be OMITTED. Use Markdown.
+                ${commonInst}
+                Format using XML Tags for the Unified Template:
+                <CS>CS + Objectives + Integration</CS> <PS>${data.ps || 'Generate'}</PS> <LC>${data.lc || 'Generate'}</LC>
+                <RESOURCES>References</RESOURCES>
+                <D1_C>(Content)</D1_C>
+                <D1_A>(Review)</D1_A> <D1_B>(Purpose)</D1_B> <D1_C_Proc>(Examples)</D1_C_Proc>
+                <D1_D>(Discuss 1)</D1_D> <D1_E>(Discuss 2)</D1_E> <D1_F>(Mastery)</D1_F> 
+                <D1_G>(Application + Rubric)</D1_G> <D1_H>(Generalization)</D1_H> <D1_I>(Quiz + Rubric)</D1_I> <D1_J>(Add)</D1_J>
             `;
         } else {
             const activeIndices = [];
             data.dates.forEach((d, i) => { if(d) activeIndices.push(i+1); });
             const activeDaysStr = activeIndices.length > 0 ? `Generate content ONLY for these days: ${activeIndices.map(i=>'Day '+i).join(', ')}.` : "Generate content for all 5 days.";
-
             prompt = `
                 Act as DepEd Teacher. Create a 5-DAY Daily Lesson Log (DLL) for "${data.topic}" (${data.subject}, ${data.grade}).
-                Standards: ${data.cs || 'Generate CS'}, ${data.ps || 'Generate PS'}, ${data.lc || 'Generate LC'}.
-                ${activeDaysStr}. For days NOT selected, leave the XML tags empty.
-                <CS>${data.cs || 'Generate CS'}</CS> <PS>${data.ps || 'Generate PS'}</PS> <LC>${data.lc || 'Generate LC'}</LC>
-                <RESOURCES>List references</RESOURCES>
-                Day 1: <D1_C>(Topic)</D1_C> <D1_A>...</D1_A> <D1_B>...</D1_B> <D1_C_Proc>...</D1_C_Proc> <D1_D>...</D1_D> <D1_E>...</D1_E> <D1_F>...</D1_F> <D1_G>...</D1_G> <D1_H>...</D1_H> <D1_I>...</D1_I> <D1_J>...</D1_J>
-                Day 2: <D2_C>(Topic)</D2_C> ... <D2_J>...</D2_J>
-                Day 3: <D3_C>(Topic)</D3_C> ...
-                Day 4: <D4_C>(Topic)</D4_C> ...
-                Day 5: <D5_C>(Topic)</D5_C> ...
+                ${commonInst}
+                ${activeDaysStr}
+                <CS>CS + Objectives + Integration</CS> <PS>${data.ps}</PS> <LC>${data.lc}</LC> <RESOURCES>Refs</RESOURCES>
+                Day 1: <D1_C>...</D1_C> <D1_A>...</D1_A> ... <D1_J>...</D1_J>
+                Day 2: <D2_C>...</D2_C> ...
+                Day 3: <D3_C>...</D3_C> ...
+                Day 4: <D4_C>...</D4_C> ...
+                Day 5: <D5_C>...</D5_C> ...
             `;
         }
 
@@ -495,7 +497,6 @@
                     if(val) document.getElementById(`d${i}-proc-${s.toLowerCase()}`).innerHTML = marked.parse(val);
                 });
             }
-            
             Swal.fire({ icon: 'success', title: 'Plan Generated!', timer: 1500, showConfirmButton: false });
         } catch (e) { 
             Swal.fire({ icon: 'error', title: 'Server Error', text: e.message });
