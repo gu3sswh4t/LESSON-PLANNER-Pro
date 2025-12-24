@@ -10,7 +10,15 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --primary: #0f172a; --accent: #2563eb; --bg-app: #e2e8f0; --paper-width: 216mm; --paper-height: 330mm; } 
+        :root { 
+            --primary: #0f172a; 
+            --accent: #2563eb; 
+            --bg-app: #e2e8f0; 
+            /* A4 Size Dimensions */
+            --paper-width: 297mm; 
+            --paper-height: 210mm; 
+        } 
+        
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Roboto', sans-serif; background: var(--bg-app); height: 100vh; display: flex; overflow: hidden; color: #334155; }
         
@@ -67,8 +75,8 @@
         }
 
         .bond-paper.landscape {
-            width: 330mm; 
-            min-height: 216mm; 
+            width: 297mm; 
+            min-height: 210mm; 
             padding: 10mm;
         }
 
@@ -118,7 +126,7 @@
         
         @media print {
             @page { 
-                size: landscape; 
+                size: A4 landscape; 
                 margin: 5mm; 
             }
             body { 
@@ -208,10 +216,53 @@
         </div>
 
         <div class="row">
-            <div class="form-group"><label>Grade</label><input type="text" id="grade" placeholder="Grade 11"></div>
-            <div class="form-group"><label>Subject</label><input type="text" id="subject" placeholder="Science"></div>
+            <div class="form-group">
+                <label>Grade Level</label>
+                <select id="grade" onchange="renderEmptyLayout()">
+                    <option value="Grade 1">Grade 1</option>
+                    <option value="Grade 2">Grade 2</option>
+                    <option value="Grade 3">Grade 3</option>
+                    <option value="Grade 4">Grade 4</option>
+                    <option value="Grade 5">Grade 5</option>
+                    <option value="Grade 6">Grade 6</option>
+                    <option value="Grade 7">Grade 7</option>
+                    <option value="Grade 8">Grade 8</option>
+                    <option value="Grade 9">Grade 9</option>
+                    <option value="Grade 10">Grade 10</option>
+                    <option value="Grade 11">Grade 11</option>
+                    <option value="Grade 12">Grade 12</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Quarter</label>
+                <select id="quarter" onchange="renderEmptyLayout()">
+                    <option value="1st Quarter">1st Quarter</option>
+                    <option value="2nd Quarter">2nd Quarter</option>
+                    <option value="3rd Quarter">3rd Quarter</option>
+                    <option value="4th Quarter">4th Quarter</option>
+                </select>
+            </div>
         </div>
-        <div class="form-group"><label>Quarter</label><input type="text" id="quarter" placeholder="First Quarter"></div>
+
+        <div class="form-group">
+            <label>Subject</label>
+            <select id="subjectSelect" onchange="handleSubjectChange()">
+                <option value="Science">Science</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="English">English</option>
+                <option value="Filipino">Filipino</option>
+                <option value="Araling Panlipunan">Araling Panlipunan</option>
+                <option value="MAPEH">MAPEH</option>
+                <option value="TLE">TLE</option>
+                <option value="ESP">ESP</option>
+                <option value="Empowerment Technologies">Empowerment Technologies</option>
+                <option value="Introduction to Philosophy">Introduction to Philosophy</option>
+                <option value="Oral Communication">Oral Communication</option>
+                <option value="Manual">Enter Manually...</option>
+            </select>
+            <input type="text" id="subjectManual" placeholder="Type Subject Name" style="display:none; margin-top:5px;" oninput="renderEmptyLayout()">
+        </div>
+
         <div class="form-group" id="section-group"><label>Section</label><input type="text" id="section" placeholder="Section Name"></div>
 
         <div class="section-label">II. Lesson Content</div>
@@ -261,7 +312,7 @@
 <div class="preview-area">
     <div class="bond-paper" id="paperContent">
         <div class="official-header">
-            <img src="logo.png" alt="School Logo" onerror="this.style.display='none'">
+            <img id="headerLogo" src="logo.png" alt="School Logo" crossorigin="anonymous" onerror="this.style.display='none'">
             <h5>Republic of the Philippines</h5>
             <h5>Department of Education</h5>
             <h5>Region XI</h5>
@@ -296,12 +347,28 @@
         renderEmptyLayout(); 
     }
 
+    function handleSubjectChange() {
+        const select = document.getElementById('subjectSelect');
+        const manualInput = document.getElementById('subjectManual');
+        if (select.value === 'Manual') {
+            manualInput.style.display = 'block';
+        } else {
+            manualInput.style.display = 'none';
+        }
+        renderEmptyLayout();
+    }
+
     function getInputs() {
         const type = document.getElementById('docType').value;
         const teacherName = type === 'DLL' ? document.getElementById('teacher-dll').value : document.getElementById('teacher').value;
         const isDLP = type === 'DLP';
         const teachingTime = isDLP ? document.getElementById('dlp-time').value : document.getElementById('dll-time').value;
         
+        let subjectVal = document.getElementById('subjectSelect').value;
+        if (subjectVal === 'Manual') {
+            subjectVal = document.getElementById('subjectManual').value;
+        }
+
         return {
             docType: type,
             school: document.getElementById('school').value, 
@@ -316,7 +383,7 @@
                 document.getElementById('date-d5').value
             ],
             grade: document.getElementById('grade').value,
-            subject: document.getElementById('subject').value, 
+            subject: subjectVal, 
             quarter: document.getElementById('quarter').value,
             section: document.getElementById('section').value,
             topic: document.getElementById('topic').value, 
@@ -463,28 +530,50 @@
             filename:     'LessonPlan.pdf',
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2 },
-            jsPDF:        { unit: 'in', format: 'legal', orientation: 'landscape' }
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
         };
         html2pdf().set(opt).from(element).save();
     }
 
+    function getBase64Image(img) {
+        if (img.src.startsWith("data:")) return img.src; 
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        return canvas.toDataURL("image/png");
+    }
+
     function exportToWord() {
-        const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' "+
-                       "xmlns:w='urn:schemas-microsoft-com:office:word' "+
-                       "xmlns='http://www.w3.org/TR/REC-html40'>"+
-                       "<head><meta charset='utf-8'><title>Export HTML to Word Document with JavaScript</title>"+
-                       "<style>"+
-                       "@page { size: 13in 8.5in; margin: 0.5in; mso-page-orientation: landscape; }"+
-                       "body { font-family: Arial, sans-serif; }"+
-                       "table { border-collapse: collapse; width: 100%; table-layout: fixed; }"+
-                       "td, th { border: 1px solid black; padding: 5px; vertical-align: top; word-wrap: break-word; }"+
-                       ".header-label { background: #eee; font-weight: bold; }"+
-                       ".dll-row-header { background: #f3f4f6; font-weight: bold; }"+
-                       "</style></head><body>";
-        const footer = "</body></html>";
-        const sourceHTML = header+document.getElementById("paperContent").innerHTML+footer;
+        const paper = document.getElementById("paperContent");
         
+        const logoImg = document.getElementById('headerLogo');
+        let logoBase64 = '';
+        if(logoImg && logoImg.style.display !== 'none') {
+            try { logoBase64 = getBase64Image(logoImg); } catch(e) { console.warn('Logo conversion failed'); }
+        }
+
+        let htmlContent = paper.innerHTML;
+        if(logoBase64) {
+            htmlContent = htmlContent.replace(/src="[^"]*"/, `src="${logoBase64}"`);
+        }
+        
+        const preHtml = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Lesson Plan</title>";
+        const css = "<style>" +
+                    "@page { size: 29.7cm 21cm; margin: 1cm; mso-page-orientation: landscape; }" +
+                    "body { font-family: Arial, sans-serif; }" +
+                    "table { border-collapse: collapse; width: 100%; table-layout: fixed; }" +
+                    "td, th { border: 1px solid black; padding: 5px; vertical-align: top; word-wrap: break-word; }" +
+                    ".header-label { background: #eee; font-weight: bold; }" +
+                    ".dll-row-header { background: #f3f4f6; font-weight: bold; }" +
+                    ".official-header { text-align: center; }" + 
+                    "</style>";
+        const postHtml = "</body></html>";
+        
+        const sourceHTML = preHtml + css + "<body>" + htmlContent + postHtml;
         const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+        
         const fileDownload = document.createElement("a");
         document.body.appendChild(fileDownload);
         fileDownload.href = source;
