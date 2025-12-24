@@ -208,6 +208,13 @@
         };
     }
     function liveUpdateHeader() { document.getElementById('displaySchoolHeader').innerText = document.getElementById('school').value.toUpperCase(); renderEmptyLayout(); }
+    
+    function extractSection(text, tagName) {
+        const regex = new RegExp(`<${tagName}>([\\s\\S]*?)<\/${tagName}>`, 'i');
+        const match = text.match(regex);
+        return match ? match[1].trim() : null;
+    }
+
     function renderEmptyLayout() {
         const data = getInputs();
         document.getElementById('sigTeacherName').innerText = (data.teacher || "").toUpperCase();
@@ -224,6 +231,7 @@
         steps.forEach(s => { gridRows += `<tr><td class="dll-row-header">${s.l}</td>`; if(isDLP) { gridRows += `<td id="d1-proc-${s.id}" class="parsed-md"></td>`; } else { for(let i=1; i<=5; i++) gridRows += `<td id="d${i}-proc-${s.id}" class="parsed-md"></td>`; } gridRows += `</tr>`; });
         document.getElementById('contentArea').innerHTML = `<table class="tpl-table"><tr><th style="width:150px"></th>${colsHTML}</tr><tr><td colspan="${colSpan+1}" style="background:#e5e7eb; font-weight:bold;">I. OBJECTIVES</td></tr><tr><td class="dll-row-header">A. Content Standards</td><td colspan="${colSpan}" id="cell-cs" class="parsed-md">${data.cs}</td></tr><tr><td class="dll-row-header">B. Performance Standards</td><td colspan="${colSpan}" id="cell-ps" class="parsed-md">${data.ps}</td></tr><tr><td class="dll-row-header">C. Learning Competencies</td><td colspan="${colSpan}" id="cell-lc" class="parsed-md">${data.lc}</td></tr>${gridRows}<tr><td class="dll-row-header">V. REMARKS</td><td colspan="${colSpan}" style="height:30px"></td></tr><tr><td class="dll-row-header">VI. REFLECTION</td><td colspan="${colSpan}" style="height:30px"></td></tr></table>`;
     }
+
     function cleanOutput(text) {
         if(!text) return "";
         let clean = text.replace(/Support Pollinations\.AI[\s\S]*/gi, '').replace(/```xml/gi, '').replace(/```/gi, '');
@@ -231,6 +239,7 @@
         technicalTerms.forEach(regex => { clean = clean.replace(regex, ''); });
         return clean.trim();
     }
+
     async function generatePlan() {
         const d = getInputs();
         if(!d.docType || !d.grade || !d.quarter || !d.subject || !d.model || !d.topic || !d.cs || !d.ps || !d.lc) { Swal.fire({icon:'error',title:'Required',text:'Please fill all mandatory fields.'}); return; }
@@ -239,9 +248,9 @@
         btn.disabled = true; spin.style.display = 'inline-block';
         const isDLP = d.docType === 'DLP';
         const activeDays = d.dates.map((v, i) => v ? i+1 : null).filter(v => v);
-        const prompt = `Act as DepEd Teacher. Topic: "${d.topic}" Subject: ${d.subject}. Model: ${d.model}. Objectives: ${d.cs}, ${d.ps}, ${d.lc}. MANDATORY: Do not use placeholder phrases like "(Step content)". Generate actual lesson material and discussion content for Step C. For ${d.docType}, generate content for: ${isDLP ? 'Day 1' : 'Days ' + activeDays.join(',')}. Use XML: <CS>Standards+Cog,Psy,Aff objectives+3 subject integrations</CS><RESOURCES>Refs</RESOURCES> And for each day (e.g. D1): <D1_TOPIC>Lesson content details</D1_TOPIC><D1_A>...</D1_A> to <D1_J>...</D1_J>.`;
+        const prompt = `Act as DepEd Teacher. Topic: "${d.topic}" Subject: ${d.subject}. Model: ${d.model}. Objectives: ${d.cs}, ${d.ps}, ${d.lc}. MANDATORY: Do not use placeholders. Generate actual lesson material for Step C. For ${d.docType}, generate content for: ${isDLP ? 'Day 1' : 'Days ' + activeDays.join(',')}. XML: <CS>Standards+3 subjs</CS><RESOURCES>Refs</RESOURCES> And for D1: <D1_TOPIC>Lesson details</D1_TOPIC><D1_A>...</D1_A> to <D1_J>...</D1_J>.`;
         try {
-            const resp = await fetch('https://text.pollinations.ai/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'system', content: 'Generate lesson plans using XML tags. No placeholders. Focus on actual content for discussions.' }, { role: 'user', content: prompt }], model: 'openai' }) });
+            const resp = await fetch('https://text.pollinations.ai/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'system', content: 'Generate lesson plans using XML tags. No placeholders.' }, { role: 'user', content: prompt }], model: 'openai' }) });
             let text = cleanOutput(await resp.text());
             document.getElementById('cell-cs').innerHTML = marked.parse(extractSection(text, 'CS') || d.cs);
             document.getElementById('cell-resources').innerHTML = marked.parse(extractSection(text, 'RESOURCES') || "");
