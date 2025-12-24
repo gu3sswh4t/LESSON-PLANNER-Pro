@@ -9,7 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        :root { --primary: #0f172a; --accent: #2563eb; --bg-app: #e2e8f0; --paper-width: 216mm; --paper-height: 330mm; } /* Legal Size Default */
+        :root { --primary: #0f172a; --accent: #2563eb; --bg-app: #e2e8f0; --paper-width: 216mm; --paper-height: 330mm; } 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Roboto', sans-serif; background: var(--bg-app); height: 100vh; display: flex; overflow: hidden; color: #334155; }
         
@@ -70,7 +70,7 @@
 
         /* Landscape Mode Modifier */
         .bond-paper.landscape {
-            width: 330mm; /* Legal Landscape width approx */
+            width: 330mm; /* Legal Landscape */
             min-height: 216mm; 
             padding: 10mm;
         }
@@ -142,15 +142,22 @@
         <div class="form-group"><label>School Name</label><input type="text" id="school" value="COGON NATIONAL HIGH SCHOOL" oninput="liveUpdateHeader()"></div>
         
         <div id="dlp-date-group">
+            <div class="form-group"><label>Teacher</label><input type="text" id="teacher" placeholder="Name"></div>
             <div class="row">
-                <div class="form-group"><label>Teacher</label><input type="text" id="teacher" placeholder="Name"></div>
-                <div class="form-group"><label>Date/Time</label><input type="text" id="datetime" placeholder="Sept 24, 8AM"></div>
+                <div class="form-group">
+                    <label>Teaching Date</label>
+                    <input type="date" id="dlp-date" onchange="renderEmptyLayout()">
+                </div>
+                <div class="form-group">
+                    <label>Teaching Time</label>
+                    <input type="text" id="dlp-time" placeholder="e.g. 8:00 - 9:00 AM" oninput="renderEmptyLayout()">
+                </div>
             </div>
         </div>
 
         <div id="dll-date-group" style="display:none;">
             <div class="form-group"><label>Teacher</label><input type="text" id="teacher-dll" placeholder="Name"></div>
-            <div class="form-group"><label>Session Time</label><input type="text" id="dll-time" placeholder="e.g. 8:00 - 9:00 AM"></div>
+            <div class="form-group"><label>Teaching Time</label><input type="text" id="dll-time" placeholder="e.g. 8:00 - 9:00 AM" oninput="renderEmptyLayout()"></div>
             <div class="section-label" style="margin-top:5px; margin-bottom:5px;">Select Dates (Leave blank to skip)</div>
             <div class="row">
                 <div class="form-group"><label>Day 1</label><input type="date" id="date-d1" onchange="renderEmptyLayout()"></div>
@@ -241,7 +248,7 @@
             dlpGroup.style.display = 'none';
             dllGroup.style.display = 'block';
         } else {
-            // DLP also uses Landscape now to fit the wide unified template
+            // DLP uses unified landscape template
             paper.classList.add('landscape'); 
             dlpGroup.style.display = 'block';
             dllGroup.style.display = 'none';
@@ -252,13 +259,17 @@
     function getInputs() {
         const type = document.getElementById('docType').value;
         const teacherName = type === 'DLL' ? document.getElementById('teacher-dll').value : document.getElementById('teacher').value;
+        const isDLP = type === 'DLP';
+
+        // DLP uses dlp-date/time, DLL uses array + dll-time
+        const teachingTime = isDLP ? document.getElementById('dlp-time').value : document.getElementById('dll-time').value;
         
         return {
             docType: type,
             school: document.getElementById('school').value, 
             teacher: teacherName,
-            datetime: document.getElementById('datetime').value, 
-            dllTime: document.getElementById('dll-time').value,
+            dlpDate: document.getElementById('dlp-date').value, 
+            teachingTime: teachingTime,
             dates: [
                 document.getElementById('date-d1').value,
                 document.getElementById('date-d2').value,
@@ -299,9 +310,14 @@
 
         const isDLP = data.docType === 'DLP';
         const colSpan = isDLP ? 1 : 5;
+        
+        // Build Column Headers
         const colsHTML = isDLP 
             ? `<th style="width:70%">Detailed Content</th>` 
             : data.dates.map((d, i) => `<th class="col-day">${d ? 'Day '+(i+1)+'<br><span style="font-weight:normal;font-size:7pt">'+d+'</span>' : 'Day '+(i+1)}</th>`).join('');
+
+        // Build Date String
+        const dateDisplay = isDLP ? data.dlpDate : data.dates.filter(d => d).join(' / ');
 
         headerArea.innerHTML = `
             <table class="tpl-table" style="margin-bottom:5px;">
@@ -314,13 +330,11 @@
                     <td class="header-label">Learning Area</td><td class="header-val">${data.subject}</td>
                 </tr>
                 <tr>
-                    <td class="header-label">Teaching Date/s</td><td class="header-val" style="font-size:8pt">
-                       ${isDLP ? data.datetime : data.dates.filter(d => d).join(' / ')}
-                    </td>
+                    <td class="header-label">Teaching Date/s</td><td class="header-val" style="font-size:8pt">${dateDisplay}</td>
                     <td class="header-label">Quarter</td><td class="header-val">${data.quarter}</td>
                 </tr>
                 <tr>
-                     <td class="header-label">Teaching Time</td><td class="header-val">${isDLP ? data.datetime : data.dllTime}</td>
+                     <td class="header-label">Teaching Time</td><td class="header-val">${data.teachingTime}</td>
                      <td class="header-label">Section</td><td class="header-val">${data.section}</td>
                 </tr>
             </table>
@@ -391,10 +405,7 @@
         const filters = [
             /AFTER Application\/Elaborate, insert Rubric:/gi,
             /\*\*AFTER Application\/Elaborate, insert Rubric:\*\*/gi,
-            /Format: 1\. Question\?[\s\S]*?Provide Answer Key\./gi,
             /\(INTERNAL:[\s\S]*?\)/gi,
-            /Create two Markdown Tables./gi,
-            /Rubric \(after Application\/Elaborate\):/gi
         ];
         filters.forEach(regex => { clean = clean.replace(regex, ''); });
         return clean;
@@ -412,7 +423,7 @@
     async function generatePlan() {
         const data = getInputs();
         
-        // --- CHECK IF RUNNING OFFLINE ---
+        // --- OFFLINE CHECK ---
         if (window.location.protocol === 'file:') {
             Swal.fire({ icon: 'error', title: 'Offline Mode Error', html: 'You cannot run this file directly.<br>Please use <b>Live Server</b> in VS Code or upload to <b>GitHub Pages</b>.' });
             return;
@@ -429,41 +440,70 @@
         
         let prompt = "";
         const isDLP = data.docType === 'DLP';
+        
+        // --- STRICT PROMPT CONSTRUCTION ---
         const commonInst = `
-            Standards: ${data.cs || 'Generate CS'}, ${data.ps || 'Generate PS'}, ${data.lc || 'Generate LC'}.
-            REQUIREMENTS:
-            1. **Content Standards**: MUST include Cognitive, Psychomotor, and Affective objectives.
-            2. **Integration**: Integrate at least 3 subjects in the Objectives.
-            3. **Procedures**: Tailor steps to topic. **CRITICAL**: For EVERY activity, include a **SIMPLE RUBRIC** (e.g. 5pts=Accurate) in the text.
-            4. **Resources**: Specific references are required.
+            Standards Inputs: 
+            CS Input: "${data.cs || 'None'}"
+            PS Input: "${data.ps || 'None'}"
+            LC Input: "${data.lc || 'None'}"
+
+            MANDATORY OUTPUT RULES:
+            1. **Content Standards (<CS>)**: MUST incorporate Cognitive, Psychomotor, and Affective objectives explicitly. ALSO integrate 3 subjects here.
+            2. **Procedures**: Tailor steps to the topic "${data.topic}".
+            3. **Rubrics**: For EVERY procedure step (A-J) that involves an activity, you MUST include a short rubric in the text (e.g., "5pts: Correct...").
+            4. **Resources**: Provide valid book/URL references.
         `;
 
         if (isDLP) {
             prompt = `
                 Act as DepEd Teacher. Create a DETAILED Lesson Plan (DLP) for "${data.topic}" (${data.subject}, ${data.grade}).
                 ${commonInst}
-                Format using XML Tags for the Unified Template:
-                <CS>CS + Objectives + Integration</CS> <PS>${data.ps || 'Generate'}</PS> <LC>${data.lc || 'Generate'}</LC>
-                <RESOURCES>References</RESOURCES>
-                <D1_C>(Content)</D1_C>
-                <D1_A>(Review)</D1_A> <D1_B>(Purpose)</D1_B> <D1_C_Proc>(Examples)</D1_C_Proc>
-                <D1_D>(Discuss 1)</D1_D> <D1_E>(Discuss 2)</D1_E> <D1_F>(Mastery)</D1_F> 
-                <D1_G>(Application + Rubric)</D1_G> <D1_H>(Generalization)</D1_H> <D1_I>(Quiz + Rubric)</D1_I> <D1_J>(Add)</D1_J>
+                
+                Generate XML Tags:
+                <CS>Detailed Content Standards + Objectives (Cog, Psy, Aff) + Integration</CS> 
+                <PS>${data.ps ? data.ps : 'Generate Performance Standards'}</PS> 
+                <LC>${data.lc ? data.lc : 'Generate Learning Competencies'}</LC>
+                <RESOURCES>List references</RESOURCES>
+
+                <D1_C>(Detailed Content Topic)</D1_C>
+                <D1_A>(Review/Intro)</D1_A> 
+                <D1_B>(Purpose)</D1_B> 
+                <D1_C_Proc>(Examples)</D1_C_Proc>
+                <D1_D>(Discuss Concept 1)</D1_D> 
+                <D1_E>(Discuss Concept 2)</D1_E> 
+                <D1_F>(Mastery Activity + Rubric)</D1_F> 
+                <D1_G>(Application + Rubric)</D1_G> 
+                <D1_H>(Generalization)</D1_H> 
+                <D1_I>(Evaluation/Quiz + Rubric)</D1_I> 
+                <D1_J>(Additional)</D1_J>
+                
+                NOTE: Leave REMARKS/REFLECTION tags out.
             `;
         } else {
+            // DLL LOGIC
             const activeIndices = [];
             data.dates.forEach((d, i) => { if(d) activeIndices.push(i+1); });
             const activeDaysStr = activeIndices.length > 0 ? `Generate content ONLY for these days: ${activeIndices.map(i=>'Day '+i).join(', ')}.` : "Generate content for all 5 days.";
+
             prompt = `
                 Act as DepEd Teacher. Create a 5-DAY Daily Lesson Log (DLL) for "${data.topic}" (${data.subject}, ${data.grade}).
                 ${commonInst}
                 ${activeDaysStr}
-                <CS>CS + Objectives + Integration</CS> <PS>${data.ps}</PS> <LC>${data.lc}</LC> <RESOURCES>Refs</RESOURCES>
-                Day 1: <D1_C>...</D1_C> <D1_A>...</D1_A> ... <D1_J>...</D1_J>
+
+                Generate XML Tags:
+                <CS>Content Standards + Objectives (Cog, Psy, Aff) + Integration</CS> 
+                <PS>${data.ps ? data.ps : 'Generate'}</PS> 
+                <LC>${data.lc ? data.lc : 'Generate'}</LC> 
+                <RESOURCES>Refs</RESOURCES>
+
+                Day 1: <D1_C>...</D1_C> <D1_A>...</D1_A> <D1_B>...</D1_B> <D1_C_Proc>...</D1_C_Proc> <D1_D>...</D1_D> <D1_E>...</D1_E> <D1_F>...</D1_F> <D1_G>...</D1_G> <D1_H>...</D1_H> <D1_I>...</D1_I> <D1_J>...</D1_J>
                 Day 2: <D2_C>...</D2_C> ...
                 Day 3: <D3_C>...</D3_C> ...
                 Day 4: <D4_C>...</D4_C> ...
                 Day 5: <D5_C>...</D5_C> ...
+                
+                (Leave empty for skipped days).
             `;
         }
 
