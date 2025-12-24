@@ -81,8 +81,24 @@
         .official-header h4 { margin: 2px 0; font-size: 10pt; font-weight: bold; text-transform: uppercase; }
         
         /* TABLES */
-        .tpl-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 9pt; table-layout: fixed; }
-        .tpl-table td, .tpl-table th { border: 1px solid black; padding: 4px; vertical-align: top; overflow-wrap: break-word; word-wrap: break-word; }
+        .tpl-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 15px; 
+            font-size: 9pt; 
+            table-layout: fixed; /* Ensures content respects column width */
+        }
+        
+        .tpl-table td, .tpl-table th { 
+            border: 1px solid black; 
+            padding: 4px; 
+            vertical-align: top; 
+            
+            /* KEY FIX FOR OVERFLOW: */
+            word-wrap: break-word;          /* Breaks long words if needed */
+            overflow-wrap: break-word;      /* Modern version of word-wrap */
+            white-space: pre-wrap;          /* Preserves newlines but wraps text */
+        }
         
         .header-label { width: 15%; background: #eee; text-align: left; font-weight: bold; vertical-align: middle; font-size: 8pt; }
         .header-val { width: 35%; font-weight: bold; font-size: 9pt;}
@@ -115,6 +131,9 @@
             .bond-paper { box-shadow: none; margin: 0; padding: 0; width: 100%; border: none; }
             .bond-paper.landscape { width: 100%; transform: none; }
             .btn-group { display: none; }
+            
+            /* Print specific overflow fix */
+            .tpl-table td, .tpl-table th { page-break-inside: avoid; }
         }
     </style>
 </head>
