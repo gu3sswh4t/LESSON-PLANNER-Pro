@@ -105,6 +105,7 @@
         .parsed-md ul, .parsed-md ol { padding-left: 15px; margin: 0; }
         .parsed-md p { margin: 0 0 5px 0; }
         .parsed-md strong { font-weight: bold; color: #000; }
+        .parsed-md em { font-style: italic; color: #444; }
         
         @media print {
             @page { size: auto; margin: 5mm; } 
@@ -185,11 +186,11 @@
 
         <div class="section-label">III. Settings</div>
         <div class="form-group">
-            <label>Model</label>
+            <label>Instructional Model</label>
             <select id="model">
-                <option value="4As">4A's</option>
-                <option value="5Es">5E's</option>
-                <option value="7Es">7E's</option>
+                <option value="4As">4A's (Activity, Analysis, Abstraction, Application)</option>
+                <option value="5Es">5E's (Engage, Explore, Explain, Elaborate, Evaluate)</option>
+                <option value="7Es">7E's (Elicit, Engage, Explore, Explain, Elaborate, Evaluate, Extend)</option>
             </select>
         </div>
 
@@ -260,8 +261,6 @@
         const type = document.getElementById('docType').value;
         const teacherName = type === 'DLL' ? document.getElementById('teacher-dll').value : document.getElementById('teacher').value;
         const isDLP = type === 'DLP';
-
-        // DLP uses dlp-date/time, DLL uses array + dll-time
         const teachingTime = isDLP ? document.getElementById('dlp-time').value : document.getElementById('dll-time').value;
         
         return {
@@ -311,12 +310,10 @@
         const isDLP = data.docType === 'DLP';
         const colSpan = isDLP ? 1 : 5;
         
-        // Build Column Headers
         const colsHTML = isDLP 
             ? `<th style="width:70%">Detailed Content</th>` 
             : data.dates.map((d, i) => `<th class="col-day">${d ? 'Day '+(i+1)+'<br><span style="font-weight:normal;font-size:7pt">'+d+'</span>' : 'Day '+(i+1)}</th>`).join('');
 
-        // Build Date String
         const dateDisplay = isDLP ? data.dlpDate : data.dates.filter(d => d).join(' / ');
 
         headerArea.innerHTML = `
@@ -440,59 +437,85 @@
         
         let prompt = "";
         const isDLP = data.docType === 'DLP';
-        
-        // --- STRICT PROMPT CONSTRUCTION ---
-        const commonInst = `
-            Standards Inputs: 
-            CS Input: "${data.cs || 'None'}"
-            PS Input: "${data.ps || 'None'}"
-            LC Input: "${data.lc || 'None'}"
+        const model = data.model;
 
-            MANDATORY OUTPUT RULES:
-            1. **Content Standards (<CS>)**: MUST incorporate Cognitive, Psychomotor, and Affective objectives explicitly. ALSO integrate 3 subjects here.
-            2. **Procedures**: Tailor steps to the topic "${data.topic}".
-            3. **Rubrics**: For EVERY procedure step (A-J) that involves an activity, you MUST include a short rubric in the text (e.g., "5pts: Correct...").
-            4. **Resources**: Provide valid book/URL references.
+        // --- MODEL MAPPING LOGIC ---
+        // This ensures the AI knows WHICH part of the template (A-J) corresponds to which phase of 4As/5Es/7Es
+        let modelInstructions = "";
+        if (model === "4As") {
+            modelInstructions = `
+                STRICT 4A's MAPPING TO DEPED STEPS:
+                - ACTIVITY Phase -> Put inside Step C (Presenting examples) and D (Discussing #1).
+                - ANALYSIS Phase -> Put inside Step E (Discussing #2).
+                - ABSTRACTION Phase -> Put inside Step H (Generalization).
+                - APPLICATION Phase -> Put inside Step G (Application).
+                *LABEL THE PHASES IN THE TEXT (e.g., "**[ACTIVITY PHASE]** ...")*
+            `;
+        } else if (model === "5Es") {
+            modelInstructions = `
+                STRICT 5E's MAPPING TO DEPED STEPS:
+                - ENGAGE Phase -> Put inside Step A (Review) and B (Purpose).
+                - EXPLORE Phase -> Put inside Step C (Examples) and D (Discussing #1).
+                - EXPLAIN Phase -> Put inside Step E (Discussing #2) and F (Mastery).
+                - ELABORATE Phase -> Put inside Step G (Application) and H (Generalization).
+                - EVALUATE Phase -> Put inside Step I (Evaluation).
+                *LABEL THE PHASES IN THE TEXT (e.g., "**[ENGAGE PHASE]** ...")*
+            `;
+        } else {
+             modelInstructions = `
+                STRICT 7E's MAPPING:
+                - ELICIT/ENGAGE -> Step A/B.
+                - EXPLORE -> Step C/D.
+                - EXPLAIN -> Step E.
+                - ELABORATE -> Step F/G/H.
+                - EVALUATE -> Step I.
+                - EXTEND -> Step J.
+                *LABEL THE PHASES IN THE TEXT*
+             `;
+        }
+
+        // --- COMMON INSTRUCTIONS (Objectives, Rubrics, etc) ---
+        const commonInst = `
+            Standards Inputs: CS Input: "${data.cs || 'None'}", PS: "${data.ps || 'None'}", LC: "${data.lc || 'None'}".
+            
+            MANDATORY RULES:
+            1. **Content Standards (<CS>)**: MUST include Cognitive, Psychomotor, and Affective objectives AND Integration of 3 subjects.
+            2. **Procedures**: Follow the ${model} Model using the mapping below.
+            ${modelInstructions}
+            3. **Rubrics**: For EVERY procedure step that involves an activity, include a SIMPLE RUBRIC (e.g., "5pts: Accurate... 3pts: ...").
+            4. **Resources**: Specific references/links required.
         `;
 
         if (isDLP) {
             prompt = `
-                Act as DepEd Teacher. Create a DETAILED Lesson Plan (DLP) for "${data.topic}" (${data.subject}, ${data.grade}).
+                Act as DepEd Teacher. Create a DETAILED Lesson Plan (DLP) for "${data.topic}" (${data.subject}, ${data.grade}) using the **${model} Model**.
                 ${commonInst}
                 
                 Generate XML Tags:
-                <CS>Detailed Content Standards + Objectives (Cog, Psy, Aff) + Integration</CS> 
-                <PS>${data.ps ? data.ps : 'Generate Performance Standards'}</PS> 
-                <LC>${data.lc ? data.lc : 'Generate Learning Competencies'}</LC>
+                <CS>Content Stds + Objectives (Cog/Psy/Aff) + Integration</CS> 
+                <PS>${data.ps ? data.ps : 'Generate'}</PS> 
+                <LC>${data.lc ? data.lc : 'Generate'}</LC>
                 <RESOURCES>List references</RESOURCES>
 
-                <D1_C>(Detailed Content Topic)</D1_C>
-                <D1_A>(Review/Intro)</D1_A> 
-                <D1_B>(Purpose)</D1_B> 
-                <D1_C_Proc>(Examples)</D1_C_Proc>
-                <D1_D>(Discuss Concept 1)</D1_D> 
-                <D1_E>(Discuss Concept 2)</D1_E> 
-                <D1_F>(Mastery Activity + Rubric)</D1_F> 
-                <D1_G>(Application + Rubric)</D1_G> 
-                <D1_H>(Generalization)</D1_H> 
-                <D1_I>(Evaluation/Quiz + Rubric)</D1_I> 
-                <D1_J>(Additional)</D1_J>
+                <D1_C>(Topic)</D1_C>
+                <D1_A>(Step A)</D1_A> <D1_B>(Step B)</D1_B> <D1_C_Proc>(Step C)</D1_C_Proc>
+                <D1_D>(Step D)</D1_D> <D1_E>(Step E)</D1_E> <D1_F>(Step F)</D1_F> 
+                <D1_G>(Step G)</D1_G> <D1_H>(Step H)</D1_H> <D1_I>(Step I)</D1_I> <D1_J>(Step J)</D1_J>
                 
-                NOTE: Leave REMARKS/REFLECTION tags out.
+                NOTE: Omit REMARKS/REFLECTION. Use Markdown.
             `;
         } else {
-            // DLL LOGIC
             const activeIndices = [];
             data.dates.forEach((d, i) => { if(d) activeIndices.push(i+1); });
             const activeDaysStr = activeIndices.length > 0 ? `Generate content ONLY for these days: ${activeIndices.map(i=>'Day '+i).join(', ')}.` : "Generate content for all 5 days.";
 
             prompt = `
-                Act as DepEd Teacher. Create a 5-DAY Daily Lesson Log (DLL) for "${data.topic}" (${data.subject}, ${data.grade}).
+                Act as DepEd Teacher. Create a 5-DAY Daily Lesson Log (DLL) for "${data.topic}" (${data.subject}, ${data.grade}) using **${model}**.
                 ${commonInst}
                 ${activeDaysStr}
 
                 Generate XML Tags:
-                <CS>Content Standards + Objectives (Cog, Psy, Aff) + Integration</CS> 
+                <CS>Content Stds + Objectives (Cog/Psy/Aff) + Integration</CS> 
                 <PS>${data.ps ? data.ps : 'Generate'}</PS> 
                 <LC>${data.lc ? data.lc : 'Generate'}</LC> 
                 <RESOURCES>Refs</RESOURCES>
@@ -502,8 +525,6 @@
                 Day 3: <D3_C>...</D3_C> ...
                 Day 4: <D4_C>...</D4_C> ...
                 Day 5: <D5_C>...</D5_C> ...
-                
-                (Leave empty for skipped days).
             `;
         }
 
