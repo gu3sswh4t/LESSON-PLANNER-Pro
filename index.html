@@ -86,7 +86,7 @@
             border-collapse: collapse; 
             margin-bottom: 15px; 
             font-size: 9pt; 
-            table-layout: fixed; /* Ensures content respects column width */
+            table-layout: fixed; 
         }
         
         .tpl-table td, .tpl-table th { 
@@ -94,10 +94,11 @@
             padding: 4px; 
             vertical-align: top; 
             
-            /* KEY FIX FOR OVERFLOW: */
-            word-wrap: break-word;          /* Breaks long words if needed */
-            overflow-wrap: break-word;      /* Modern version of word-wrap */
-            white-space: pre-wrap;          /* Preserves newlines but wraps text */
+            /* AGGRESSIVE WRAPPING TO PREVENT OVERFLOW */
+            word-wrap: break-word;          
+            overflow-wrap: break-word;      
+            word-break: break-word;         
+            white-space: pre-wrap;          
         }
         
         .header-label { width: 15%; background: #eee; text-align: left; font-weight: bold; vertical-align: middle; font-size: 8pt; }
@@ -124,16 +125,42 @@
         .parsed-md em { font-style: italic; color: #444; }
         
         @media print {
-            @page { size: auto; margin: 5mm; } 
-            body { background: white; display: block; height: auto; }
+            @page { 
+                size: landscape; 
+                margin: 5mm; 
+            }
+            body { 
+                background: white; 
+                display: block; 
+                height: auto; 
+                -webkit-print-color-adjust: exact; 
+            }
             .sidebar { display: none; }
             .preview-area { padding: 0; background: white; display: block; }
-            .bond-paper { box-shadow: none; margin: 0; padding: 0; width: 100%; border: none; }
-            .bond-paper.landscape { width: 100%; transform: none; }
+            
+            .bond-paper { 
+                box-shadow: none; 
+                margin: 0; 
+                padding: 0; 
+                width: 100% !important; 
+                border: none;
+                overflow: visible !important;
+                /* Shrink slightly to ensure margins don't cut off content */
+                transform: scale(0.98); 
+                transform-origin: top left;
+            }
+            
+            .bond-paper.landscape { 
+                width: 100% !important;
+            }
+            
             .btn-group { display: none; }
             
-            /* Print specific overflow fix */
-            .tpl-table td, .tpl-table th { page-break-inside: avoid; }
+            /* Print Specific Font Sizing to fit more */
+            .tpl-table td, .tpl-table th { 
+                font-size: 8.5pt !important; 
+                page-break-inside: avoid;
+            }
         }
     </style>
 </head>
